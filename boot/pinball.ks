@@ -27,19 +27,17 @@ LOCAL coreBoot IS CORE:PART:TAG + ".core.bootloader".
 LOCAL shipBoot IS SHIP:NAME + ".ship.bootloader".
 
 IF (boot_file_available(coreBoot)) {
-	print "Found core-specific bootloader...".
 	replace_bootloader(coreBoot).
 } ELSE IF (boot_file_available(shipBoot)) {
-	print "Found ship-specific bootloader...".
 	replace_bootloader(shipBoot).
 } ELSE {
-	PRINT "Specific bootloader not found.".
-	PRINT "Searching for '" + SHIP:TYPE + "' bootloader...".
-
 	LOCAL classBoot IS SHIP:TYPE + ".bootloader".
 	IF (boot_file_available(classBoot, "type")) {
 		replace_bootloader(classBoot, "type").
 	} ELSE {
-		PRINT "No better bootloader found. Terminating process.".
+		PRINT "Bootloader not found. Debug Data:".
+		PRINT "Core Tag:  " + CORE:PART:TAG.
+		PRINT "Ship Name: " + SHIP:NAME.
+		PRINT "Ship Type: " + SHIP:TYPE.
 	}
 }
