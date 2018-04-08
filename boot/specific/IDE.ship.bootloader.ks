@@ -1,28 +1,25 @@
-FUNCTION require {
-	PARAMETER file.
-	PARAMETER runOnce IS TRUE.
-	PARAMETER copyFromVol IS Volume(0).
-	PARAMETER runFromVol IS CORE:VOLUME.
+@LAZYGLOBAL OFF.
 
-	LOCAL localFile IS PATH(runFromVol) + file + ".ksm".
-	LOCAL remoteFile IS PATH(copyFromVol) + file + ".ks".
+// Pruned down boot-only require
+LOCAL FUNCTION require {
+	PARAMETER file.
+
+	LOCAL localFile IS PATH(VOLUME(1)) + file + ".ksm".
+	LOCAL remoteFile IS PATH(VOLUME(0)) + file + ".ks".
 
 	IF (NOT EXISTS(localFile) AND EXISTS(remoteFile)) {
 		COMPILE remoteFile TO localFile.
 	}
 
-	IF (runOnce) {
-		RUNONCEPATH(localFile).
-	} ELSE {
-		RUNPATH(localFile).
-	}
+	RUNPATH(localFile).
 }
 
-FUNCTION tilt {
-	PRINT "Rebuilding PINBALL library...".
-	CD("0:/boot").
-	COMPILE pinball.
-	PRINT "Done.".
-}
+require("/library/standard_lib").
+
+COPYPATH("0:/ide/", "1:/").
+
+WAIT 1.
+TOGGLE AG1.
+TOGGLE AG2.
 
 print "IDE Loaded!".

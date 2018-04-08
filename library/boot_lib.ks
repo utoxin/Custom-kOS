@@ -1,3 +1,8 @@
+// Boot Library v0.0.1
+// (c) Utoxin, 2018
+
+@LAZYGLOBAL OFF.
+
 // Specialized check for available boot loader script
 FUNCTION boot_file_available {
 	PARAMETER file.
@@ -21,7 +26,7 @@ FUNCTION replace_bootloader {
 	LOCAL localFile IS PATH(CORE:VOLUME) + "boot/" + file + ".ksm".
 	LOCAL remoteFile IS PATH(VOLUME(0)) + "boot/" + subdir + "/" + file + ".ks".
 
-	IF (forceReplace OR NOT EXISTS(localFile) {
+	IF (forceReplace OR NOT EXISTS(localFile)) {
 		await_connection().
 
 		transfer_compiled_file(remoteFile, localFile).
