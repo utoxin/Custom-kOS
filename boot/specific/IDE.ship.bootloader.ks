@@ -22,4 +22,9 @@ WAIT 1.
 TOGGLE AG1.
 TOGGLE AG2.
 
+ON AG10 {
+	RUNPATH("1:/ide/tilt").
+	RETURN TRUE.
+}
+
 print "IDE Loaded!".
