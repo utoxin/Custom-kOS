@@ -20,10 +20,12 @@ require("/library/orbit_lib").
 GLOBAL target_twr IS 2.31.
 GLOBAL last_isp IS 0.
 
+LOCAL target_altitude IS 150000.
+
 SAS OFF.
 RCS OFF.
 
-LOCK targetPitch TO 90 - 1.038 * ALT:RADAR^0.4.
+LOCK targetPitch TO SHIP:VELOCITY:SURFACE:MAG^2 * 0.0000255805 - 0.0928737 * SHIP:VELOCITY:SURFACE:MAG + 93.3309.
 LOCAL targetDirection IS 90.
 LOCK STEERING TO HEADING(targetDirection, targetPitch).
 
@@ -44,12 +46,12 @@ LOCAL FUNCTION get_throttle {
 }
 
 LOCAL FUNCTION debug_data {
-	PRINT "Apoapsis:     " + APOAPSIS AT (0, 15).
-	PRINT "Periapsis:    " + PERIAPSIS AT (0, 16).
-	PRINT "Eccentricity: " + eccen AT (0, 17).
-	PRINT "Q:            " + SHIP:Q AT (0, 18).
-	PRINT "ISP:          " + calculate_isp() AT (0, 19).
-	PRINT "DeltaV:       " + remaining_deltav() AT (0, 20).
+	PRINT "Apoapsis:     " + APOAPSIS + "     " AT (0, 15).
+	PRINT "Periapsis:    " + PERIAPSIS + "     " AT (0, 16).
+	PRINT "Eccentricity: " + eccen + "     " AT (0, 17).
+	PRINT "Q:            " + SHIP:Q + "     " AT (0, 18).
+	PRINT "ISP:          " + calculate_isp() + "     " AT (0, 19).
+	PRINT "DeltaV:       " + remaining_deltav() + "     " AT (0, 20).
 }
 
 LOCAL g IS BODY:MU / ((SHIP:ALTITUDE + BODY:RADIUS)^2).
@@ -59,14 +61,14 @@ LOCK eccen TO 1 - ( 2 / ( ( (APOAPSIS + BODY:RADIUS) / (PERIAPSIS + BODY:RADIUS)
 
 LOCAL last_thrust IS SHIP:MAXTHRUST.
 
-WHEN ALTITUDE > 40000 THEN {
+WHEN ALTITUDE > 45000 THEN {
 	LOCAL fairings IS SHIP:PARTSTAGGED("Fairing").
 	IF (fairings:LENGTH > 0) {
 		fairings[0]:GETMODULEBYINDEX(0):DOEVENT("deploy").
 	}
 }
 
-UNTIL APOAPSIS > 75000 {
+UNTIL APOAPSIS > target_altitude {
 	IF (last_thrust - SHIP:MAXTHRUST > 10) {
 		STAGE.
 		WAIT 0.
@@ -80,19 +82,56 @@ UNTIL APOAPSIS > 75000 {
 SET TARGET_TWR TO 0.
 LOCK STEERING TO PROGRADE.
 
-UNTIL ETA:APOAPSIS < 10 {
+UNTIL ALTITUDE > 70000 {
 	debug_data().
 	WAIT 0.
 }
 
-SET TARGET_TWR TO MAX(0.05, eccen * 2).
+// Set up a node to do circularization
+LOCAL myNode TO NODE(TIME:SECONDS + ETA:APOAPSIS, 0, 0, 0).
+ADD myNode.
 
-LOCAL last_eccen IS 1.
+LOCK myNodeEcc TO 1 - ( 2 / ( ( (myNode:ORBIT:APOAPSIS + BODY:RADIUS) / (myNode:ORBIT:PERIAPSIS + BODY:RADIUS) ) + 1 )).
+LOCAL last_node_ecc IS myNodeEcc.
 
-UNTIL ((last_eccen - eccen) < -0.00001 AND PERIAPSIS > 70000) OR (APOAPSIS > 80000 AND PERIAPSIS > 70000) {
+UNTIL (myNodeEcc > last_node_ecc) {
+	SET last_node_ecc TO myNodeEcc.
+	SET myNode:PROGRADE TO myNode:PROGRADE + 10.
+	WAIT 0.
+}
+
+SET last_node_ecc TO myNodeEcc.
+
+UNTIL (myNodeEcc > last_node_ecc) {
+	SET last_node_ecc TO myNodeEcc.
+	SET myNode:PROGRADE TO myNode:PROGRADE - 1.
+	WAIT 0.
+}
+
+SET last_node_ecc TO myNodeEcc.
+
+UNTIL (myNodeEcc > last_node_ecc) {
+	SET last_node_ecc TO myNodeEcc.
+	SET myNode:PROGRADE TO myNode:PROGRADE + 0.1.
+	WAIT 0.
+}
+
+LOCK STEERING TO myNode:BURNVECTOR.
+
+LOCAL ttb IS time_to_burn(myNode:DELTAV:MAG, SHIP:MASS).
+UNTIL myNode:ETA <= TTB.
+
+LOCK THROTTLE TO 0.5.
+
+UNTIL (myNode:DELTAV:MAG < 25) {
 	debug_data().
+	WAIT 0.
+}
 
-	SET last_eccen TO eccen.
+LOCK THROTTLE TO myNode:DELTAV:MAG / 50.
+
+UNTIL (myNode:DELTAV:MAG < 0.1) {
+	debug_data().
 	WAIT 0.
 }
 
