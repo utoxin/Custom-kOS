@@ -1,15 +1,13 @@
 // Boot Library v0.0.1
 // (c) Utoxin, 2018
-
 @LAZYGLOBAL OFF.
 
 // Specialized check for available boot loader script
 FUNCTION boot_file_available {
 	PARAMETER file.
-	PARAMETER subdir IS "specific".
 	
 	LOCAL localFile IS PATH(CORE:VOLUME) + "boot/" + file + ".ksm".
-	LOCAL remoteFile IS PATH(VOLUME(0)) + "boot/" + subdir + "/" + file + ".ks".
+	LOCAL remoteFile IS shipScriptSource + "boot/" + file + ".ks".
 	
 	await_connection().
 
@@ -19,12 +17,11 @@ FUNCTION boot_file_available {
 // Used to replace the default bootloader on the core with another script
 FUNCTION replace_bootloader {
 	PARAMETER file.
-	PARAMETER subdir IS "specific".
 	PARAMETER forceReplace IS FALSE.
 
 	LOCAL oldBoot IS CORE:BOOTFILENAME.
 	LOCAL localFile IS PATH(CORE:VOLUME) + "boot/" + file + ".ksm".
-	LOCAL remoteFile IS PATH(VOLUME(0)) + "boot/" + subdir + "/" + file + ".ks".
+	LOCAL remoteFile IS shipScriptSource + "boot/" + file + ".ks".
 
 	IF (forceReplace OR NOT EXISTS(localFile)) {
 		await_connection().
@@ -34,6 +31,7 @@ FUNCTION replace_bootloader {
 
 	SET CORE:BOOTFILENAME TO "/boot/" + file + ".ksm".
 	DELETEPATH(oldBoot).
+	MOVEPATH(remoteFile, remoteFile + ".done").
 
 	REBOOT.
 }

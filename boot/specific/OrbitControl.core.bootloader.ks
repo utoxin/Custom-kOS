@@ -25,7 +25,7 @@ LOCAL target_altitude IS 85000.
 SAS OFF.
 RCS OFF.
 
-LOCK targetPitch TO SHIP:VELOCITY:SURFACE:MAG^2 * 0.0000255805 - 0.0928737 * SHIP:VELOCITY:SURFACE:MAG + 93.3309.
+LOCK targetPitch TO MIN(90, SHIP:VELOCITY:SURFACE:MAG^2 * 0.0000255805 - 0.0928737 * SHIP:VELOCITY:SURFACE:MAG + 93.3309).
 LOCAL targetDirection IS 90.
 LOCK STEERING TO HEADING(targetDirection, targetPitch).
 
@@ -48,7 +48,7 @@ LOCAL FUNCTION get_throttle {
 LOCAL FUNCTION debug_data {
 	PRINT "Apoapsis:     " + APOAPSIS + "     " AT (0, 15).
 	PRINT "Periapsis:    " + PERIAPSIS + "     " AT (0, 16).
-	PRINT "Eccentricity: " + eccen + "     " AT (0, 17).
+	PRINT "Eccentricity: " + SHIP:ORBIT:ECCENTRICITY + "     " AT (0, 17).
 	PRINT "Q:            " + SHIP:Q + "     " AT (0, 18).
 	PRINT "ISP:          " + calculate_isp() + "     " AT (0, 19).
 	PRINT "DeltaV:       " + remaining_deltav() + "     " AT (0, 20).
@@ -57,7 +57,6 @@ LOCAL FUNCTION debug_data {
 LOCAL g IS BODY:MU / ((SHIP:ALTITUDE + BODY:RADIUS)^2).
 LOCK max_twr TO MAX(SHIP:MAXTHRUST / (g * SHIP:MASS), 0.01).
 LOCK THROTTLE TO get_throttle().
-LOCK eccen TO 1 - ( 2 / ( ( (APOAPSIS + BODY:RADIUS) / (PERIAPSIS + BODY:RADIUS) ) + 1 )).
 
 LOCAL last_thrust IS SHIP:MAXTHRUST.
 
@@ -91,29 +90,28 @@ UNTIL ALTITUDE > 70000 {
 LOCAL myNode TO NODE(TIME:SECONDS + ETA:APOAPSIS, 0, 0, 0).
 ADD myNode.
 
-LOCK myNodeEcc TO 1 - ( 2 / ( ( (myNode:ORBIT:APOAPSIS + BODY:RADIUS) / (myNode:ORBIT:PERIAPSIS + BODY:RADIUS) ) + 1 )).
-LOCAL last_node_ecc IS myNodeEcc.
+LOCAL last_node_ecc IS myNode:ORBIT:ECCENTRICITY.
 
-UNTIL (myNodeEcc > last_node_ecc) {
-	SET last_node_ecc TO myNodeEcc.
+UNTIL (myNode:ORBIT:ECCENTRICITY > last_node_ecc) {
+	SET last_node_ecc TO myNode:ORBIT:ECCENTRICITY.
 	SET myNode:PROGRADE TO myNode:PROGRADE + 10.
 	debug_data().
 	WAIT 0.
 }
 
-SET last_node_ecc TO myNodeEcc.
+SET last_node_ecc TO myNode:ORBIT:ECCENTRICITY.
 
-UNTIL (myNodeEcc > last_node_ecc) {
-	SET last_node_ecc TO myNodeEcc.
+UNTIL (myNode:ORBIT:ECCENTRICITY > last_node_ecc) {
+	SET last_node_ecc TO myNode:ORBIT:ECCENTRICITY.
 	SET myNode:PROGRADE TO myNode:PROGRADE - 1.
 	debug_data().
 	WAIT 0.
 }
 
-SET last_node_ecc TO myNodeEcc.
+SET last_node_ecc TO myNode:ORBIT:ECCENTRICITY.
 
-UNTIL (myNodeEcc > last_node_ecc) {
-	SET last_node_ecc TO myNodeEcc.
+UNTIL (myNode:ORBIT:ECCENTRICITY > last_node_ecc) {
+	SET last_node_ecc TO myNode:ORBIT:ECCENTRICITY.
 	SET myNode:PROGRADE TO myNode:PROGRADE + 0.1.
 	debug_data().
 	WAIT 0.

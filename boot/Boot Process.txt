@@ -1,0 +1,9 @@
+kOS Boot Flow
+
+Load Basic OS
+Check For Update From Network
+	If Found
+		Download And Reboot
+	If Not Found
+		Check for state file, and load if present
+		Load main program

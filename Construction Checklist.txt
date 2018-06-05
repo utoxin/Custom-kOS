@@ -1,0 +1,6 @@
+kOS Ship Design Checklist
+
+1. Antenna tagged 'Default Antenna'
+2. Ship named
+3. Cores named
+4. Ship update folder created, and initial scripts loaded.
