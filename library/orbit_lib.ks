@@ -6,7 +6,7 @@ FUNCTION altitude_orbit_target_velocity {
 	PARAMETER base_body.  // Body to calculate orbit around
 	PARAMETER semi_major. // The orbital semi major axis
 	
-	RETURN sqrt(base_body:MU / target_altitude).
+	RETURN sqrt(base_body:MU / (semi_major + base_body:RADIUS)).
 }
 
 FUNCTION orbit_velocity_at_altitude {
@@ -18,9 +18,6 @@ FUNCTION orbit_velocity_at_altitude {
 
 FUNCTION time_to_execute_maneuver {
 	PARAMETER maneuver_deltav.
-	
-	
-	
 }
 
 FUNCTION time_to_burn {
@@ -53,11 +50,12 @@ FUNCTION remaining_deltav {
 FUNCTION calculate_isp {
 	LOCAL numerator IS 0.
 	LOCAL divisor IS 0.
+	LOCAL last_isp IS 0.
 	
 	FOR shipPart IN SHIP:PARTS {
-		IF shipPart:typename() = "Engine" {
-			SET numerator TO numerator + (shipPart:ISP * shipPart:FUELFLOW).
-			SET divisor TO divisor + shipPart:FUELFLOW.
+		IF shipPart:typename() = "Engine" AND shipPart:IGNITION {
+			SET numerator TO numerator + (shipPart:ISP * shipPart:MAXFUELFLOW).
+			SET divisor TO divisor + shipPart:MAXFUELFLOW.
 		}
 	}
 	

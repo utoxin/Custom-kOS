@@ -2,16 +2,18 @@
 // (c) Utoxin, 2018
 @LAZYGLOBAL OFF.
 
+PRINT "DEBUGGING.".
+
 // Pruned down boot-only require
 LOCAL FUNCTION require {
 	PARAMETER file.
 
+	PRINT "Compiling file " + file + " to local storage.".
+
 	LOCAL localFile IS PATH(VOLUME(1)) + file + ".ksm".
 	LOCAL remoteFile IS PATH(VOLUME(0)) + file + ".ks".
 
-	IF (NOT EXISTS(localFile) AND EXISTS(remoteFile)) {
-		COMPILE remoteFile TO localFile.
-	}
+	COMPILE remoteFile TO localFile.
 
 	RUNPATH(localFile).
 }
@@ -24,11 +26,12 @@ IF (CORE:PART:TAG = "") {
 	SET CORE:PART:TAG TO "UID_" + CORE:PART:UID.
 }
 
-GLOBAL shipScriptSource IS PATH(VOLUME(0)) + "/ships/" + SHIP:NAME + "/".
+GLOBAL shipScriptSource IS PATH(VOLUME(0)) + "ships/" + SHIP:NAME + "/".
+GLOBAL classScriptSource IS PATH(VOLUME(0)) + "classes/" + SHIP:TYPE + "/".
 
 LOCAL coreBoot IS CORE:PART:TAG + ".core.bootloader".
-LOCAL shipBoot IS shipScriptSource + "boot/" + SHIP:NAME + ".ship.bootloader".
-LOCAL classBoot IS shipScriptSource + "boot/" + SHIP:TYPE + ".bootloader".
+LOCAL shipBoot IS "ship.bootloader".
+LOCAL classBoot IS "type.bootloader".
 
 IF (boot_file_available(coreBoot)) {
 	PRINT "Loading core-specific file...".
@@ -36,9 +39,9 @@ IF (boot_file_available(coreBoot)) {
 } ELSE IF (boot_file_available(shipBoot)) {
 	PRINT "Loading ship-specific file...".
 	replace_bootloader(shipBoot).
-} ELSE IF (boot_file_available(classBoot)) {
+} ELSE IF (class_boot_file_available(classBoot)) {
 	PRINT "Loading type-specific file...".
-	replace_bootloader(classBoot).
+	replace_class_bootloader(classBoot).
 } ELSE {
 	PRINT "No boot update present. Purging boot_lib...".
 	purge("/library/boot_lib").

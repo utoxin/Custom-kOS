@@ -8,6 +8,23 @@ FUNCTION boot_file_available {
 	
 	LOCAL localFile IS PATH(CORE:VOLUME) + "boot/" + file + ".ksm".
 	LOCAL remoteFile IS shipScriptSource + "boot/" + file + ".ks".
+
+	PRINT "Checking for file: " + localFile.
+	PRINT "Checking for file: " + remoteFile.
+	
+	await_connection().
+
+	RETURN EXISTS(localFile) OR EXISTS(remoteFile).
+}
+
+FUNCTION class_boot_file_available {
+	PARAMETER file.
+	
+	LOCAL localFile IS PATH(CORE:VOLUME) + "boot/" + file + ".ksm".
+	LOCAL remoteFile IS classScriptSource + "boot/" + file + ".ks".
+
+	PRINT "Checking for file: " + localFile.
+	PRINT "Checking for file: " + remoteFile.
 	
 	await_connection().
 
@@ -20,18 +37,42 @@ FUNCTION replace_bootloader {
 	PARAMETER forceReplace IS FALSE.
 
 	LOCAL oldBoot IS CORE:BOOTFILENAME.
-	LOCAL localFile IS PATH(CORE:VOLUME) + "boot/" + file + ".ksm".
+	LOCAL localFile IS "/boot/" + file + ".ksm".
 	LOCAL remoteFile IS shipScriptSource + "boot/" + file + ".ks".
+
+	replace_file(oldBoot, localFile, remoteFile, forceReplace).
+}
+
+FUNCTION replace_class_bootloader {
+	PARAMETER file.
+	PARAMETER forceReplace IS FALSE.
+
+	LOCAL oldBoot IS CORE:BOOTFILENAME.
+	LOCAL localFile IS "/boot/" + file + ".ksm".
+	LOCAL remoteFile IS classScriptSource + "boot/" + file + ".ks".
+
+	replace_file(oldBoot, localFile, remoteFile, forceReplace).
+}
+
+FUNCTION replace_file {
+	PARAMETER oldBoot.
+	PARAMETER localFile.
+	PARAMETER remoteFile.
+	PARAMETER forceReplace.
 
 	IF (forceReplace OR NOT EXISTS(localFile)) {
 		await_connection().
 
 		transfer_compiled_file(remoteFile, localFile).
+
+		PRINT CORE:BOOTFILENAME.
+
+		SET CORE:BOOTFILENAME TO localFile.
+
+		if (oldBoot <> localFile) {
+			DELETEPATH(oldBoot).
+		}
 	}
 
-	SET CORE:BOOTFILENAME TO "/boot/" + file + ".ksm".
-	DELETEPATH(oldBoot).
-	MOVEPATH(remoteFile, remoteFile + ".done").
-
-	REBOOT.
+	REBOOT.	
 }
