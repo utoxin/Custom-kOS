@@ -130,13 +130,13 @@ GLOBAL FUNCTION execute_launch {
 	LOCK target_throttle TO MAX(0.01, MIN(5, myNode:DELTAV:MAG / max_twr) / 5).
 
 	LOCK THROTTLE TO target_throttle.
-	LOCAL last_thrust IS SHIP:THRUST.
+	LOCAL last_thrust IS SHIP:MAXTHRUST.
 
 	UNTIL (myNode:DELTAV:MAG < 0.1) {
-		IF (last_thrust - SHIP:THRUST > 10) {
+		IF (last_thrust - SHIP:MAXTHRUST > 10) {
 			STAGE.
 			WAIT 0.
-			SET last_thrust TO SHIP:THRUST.
+			SET last_thrust TO SHIP:MAXTHRUST.
 		}
 
 		debug_data().

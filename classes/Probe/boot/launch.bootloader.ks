@@ -17,8 +17,13 @@ LOCAL FUNCTION require {
 require("/library/standard_lib").
 require("/library/orbit_lib").
 require("/library/launch_lib").
+require("/library/boot_lib").
 
 LOCAL target_altitude IS 100000.
 LOCAL target_inclination IS 90.
 
-execute_launch(target_altitude, target_inclination).
+if (SHIP:STATUS = "PRELAUNCH") {
+	execute_launch(target_altitude, target_inclination).
+}
+
+select_bootloader().

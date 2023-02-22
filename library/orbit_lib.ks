@@ -65,3 +65,56 @@ FUNCTION calculate_isp {
 	
 	RETURN last_isp.
 }
+
+FUNCTION execute_next_node {
+	SAS OFF.
+
+	SET node TO NEXTNODE.
+
+	PRINT "Node in: " + ROUND(node:ETA) + "s, dV: " + ROUND(node:DELTAV:MAG).
+
+	LOCK max_acc TO SHIP:MAXTHRUST/SHIP:MASS.
+	SET burn_duration TO node:DELTAV:MAG/max_acc.
+
+	PRINT "Crude Estimated Burn Duration: " + ROUND(burn_duration) + "s".
+
+	WAIT UNTIL node:ETA <= (burn_duration/2 + 60).
+
+	SET nodeBurn TO node:DELTAV.
+	LOCK STEERING TO nodeBurn.
+
+	WAIT UNTIL VANG(nodeBurn, SHIP:FACING:VECTOR) < 0.25.
+	WAIT UNTIL node:ETA <= (burn_duration / 2).
+
+	SET tset TO 0.
+	LOCK THROTTLE TO tset.
+
+	SET done TO False.
+
+	set dv0 to node:deltav.
+
+	UNTIL done {
+		SET tset TO MIN(node:DELTAV / max_acc, 1).
+
+		IF VDOT(dv0, node:deltav) < 0 {
+			PRINT "End Burn. Remaining dV: " + ROUND(node:DELTAV:MAG, 1) + "m/s, vdot: " + ROUND(VDOT(dv0, node:DELTAV), 1).
+			LOCK THROTTLE TO 0.
+			BREAK.
+		}
+
+		IF node:DELTAV:MAG < 0.1 {
+			PRINT "Finalizing burn. Remaining dV: " + ROUND(node:DELTAV:MAG, 1) + "m/s, vdot: " + ROUND(VDOT(dv0, node:DELTAV), 1).
+			WAIT UNTIL VDOT(dv0, node:DELTAV) < 0.5.
+
+			LOCK THROTTLE TO 0.
+			PRINT "End Burn. Remaining dV: " + ROUND(node:DELTAV:MAG, 1) + "m/s, vdot: " + ROUND(VDOT(dv0, node:DELTAV), 1).
+			SET done TO True.
+		}
+	}
+
+	UNLOCK STEERING.
+	UNLOCK THROTTLE.
+	REMOVE node.
+	SET SHIP:CONTROL:PILOTMAINTHROTTLE TO 0.
+	SAS ON.
+}
