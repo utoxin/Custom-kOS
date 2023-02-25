@@ -10,10 +10,9 @@ GLOBAL FUNCTION execute_launch {
 	SAS OFF.
 	RCS OFF.
 
-	LOCAL target_twr IS 2.31.
 	LOCAL last_isp IS 0.
 
-	LOCK targetPitch TO MIN(90, SHIP:VELOCITY:SURFACE:MAG^2 * 0.0000255805 - 0.0928737 * SHIP:VELOCITY:SURFACE:MAG + 93.3309).
+	LOCK targetPitch TO MIN(90, SHIP:VELOCITY:SURFACE:SQRMAGNITUDE * 0.0000255805 - 0.0928737 * SHIP:VELOCITY:SURFACE:MAG + 93.3309).
 
 	LOCAL targetDirection IS 90.
 	LOCK STEERING TO HEADING(targetDirection, targetPitch).
@@ -23,15 +22,9 @@ GLOBAL FUNCTION execute_launch {
 	WAIT 0.
 
 	LOCAL FUNCTION get_throttle {
-		IF (target_twr = 0) {
-			RETURN 0.
-		}
-		
-		IF ALTITUDE > 30000 {
-			RETURN MAX(0, MIN(1, (target_twr + ((ALTITUDE - 30000) / 20000)) / max_twr)).
-		} ELSE {
-			RETURN MAX(0, MIN(1, target_twr / max_twr)).
-		}
+		LOCAL neededThrottle IS 1 / MAX(SHIP:MAXTHRUST / (g * SHIP:MASS), 0.01).
+		LOCAL qThrottledRemaining IS (1 - neededThrottle) * 1 - SHIP:Q.
+		RETURN MAX(0, MIN(1, neededThrottle + qThrottledRemaining)).
 	}
 
 	LOCAL FUNCTION debug_data {
@@ -77,8 +70,8 @@ GLOBAL FUNCTION execute_launch {
 		WAIT 0.
 	}.
 
-	SET TARGET_TWR TO 0.
 	LOCK STEERING TO PROGRADE.
+	LOCK THROTTLE TO 0.
 
 	UNTIL ALTITUDE > 70000 {
 		debug_data().

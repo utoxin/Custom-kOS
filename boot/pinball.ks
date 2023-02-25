@@ -24,4 +24,14 @@ IF (CORE:PART:TAG = "") {
 	SET CORE:PART:TAG TO "UID_" + CORE:PART:UID.
 }
 
-select_bootloader().
+IF (CORE:PART:TAG = "SECONDARY") {
+	LOCAL processorList IS list().
+	LIST PROCESSORS IN processorList.
+	IF (processorList:LENGTH() > 1) {
+		PRINT "Secondary Core: Detected other cores on vehicle... Exitting.".
+	} ELSE {
+		select_bootloader().
+	}
+} ELSE {
+	select_bootloader().
+}
